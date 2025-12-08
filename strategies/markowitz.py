@@ -1,22 +1,23 @@
 from strategies.base import BaseStrategy
-from data.loader import DataHandler
+from utils.data_handler import DataHandler
 import pandas as pd
 import numpy as np
 import cvxpy as cp
 from sklearn.covariance import LedoitWolf
-from portfolio.portfolio import Portfolio
-from execution.execution import OrderExecutor
-from report.performance import PerformanceAnalyzer
+from core.portfolio import Portfolio
+from core.execution import OrderExecutor
+from core.compute_performance import PerformanceAnalyzer
 from tabulate import tabulate
 from strategies.buy_and_hold import BuyAndHold
 from tqdm import tqdm
 import sys 
 import tracemalloc
+from utils.config_loader import load_yaml
 
 class Markowitz(BaseStrategy):
     def __init__(self, assets):
         super().__init__()
-        self.config = self.load_json_config('markowitz.json')
+        self.config = load_yaml('config/markowitz.yaml')
         self.name = "Markowitz Strategy"
         self.allocation_window = self.config["rebalance_window"]
         self.lookback_window = self.config["lookback_window"]
@@ -69,8 +70,7 @@ class Markowitz(BaseStrategy):
             executed = executor.execute(day_orders, date, order_time='Adj Close') 
             total_fees += sum(order.get("fee", 0.0) for order in executed[date])
             executed_orders[date] = executed[date]      
-            portfolio.update(date, executed) 
-        pd.Series(gamma_series).to_csv("gamma.csv")           
+            portfolio.update(date, executed)           
         portfolio_df = portfolio.get_history()
         analyzer = PerformanceAnalyzer(self.data_handler, portfolio_df, orders, strategy=self)
         stats = analyzer.compute_statistics(total_fees)
@@ -83,9 +83,10 @@ class Markowitz(BaseStrategy):
         print(table)
         if plot:
             analyzer.plot(benchmark_portfolio_df['value'])
+        return all_stats
         
     def run_backtest(self, plot=False):
-        self.generate_orders(plot=plot)
+        return self.generate_orders(plot=plot)
         
      
     def markowitz_optimize(self, gamma, mean_returns, cov_matrix):

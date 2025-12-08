@@ -1,7 +1,0 @@
-{
-    "capital": 10000.0,
-    "start_date": "2020-01-01",
-    "end_date": "2022-01-01",
-    "fee_rate": 0.001,
-    "slippage": 0.0
-}

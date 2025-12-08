@@ -6,10 +6,11 @@ from rich.table import Table
 import sys
 import os
 import json
+from utils.config_loader import load_yaml
 
 class BaseStrategy(ABC):
     def __init__(self):
-        self.general_config = self.load_json_config('general.json')
+        self.general_config = load_yaml('config/general.yaml')
         self.capital = self.general_config["capital"]
         self.start = pd.Timestamp(self.general_config["start_date"])
         self.end = pd.Timestamp(self.general_config["end_date"])

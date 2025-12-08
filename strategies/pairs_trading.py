@@ -1,22 +1,23 @@
 import statsmodels.api as sm
 from strategies.base import BaseStrategy
-from data.loader import DataHandler
+from utils.data_handler import DataHandler
 import pandas as pd
-from portfolio.portfolio import Portfolio
-from execution.execution import OrderExecutor
-from report.performance import PerformanceAnalyzer
+from core.portfolio import Portfolio
+from core.execution import OrderExecutor
+from core.compute_performance import PerformanceAnalyzer
 from tabulate import tabulate
 from strategies.buy_and_hold import BuyAndHold
 import sys 
 import os
 import json
 import numpy as np
+from utils.config_loader import load_yaml
 
 class PairsTradingStrategy(BaseStrategy):
     def __init__(self, pair):
         super().__init__()
         self.name = "Pairs Trading Strategy"
-        self.config = self.load_json_config("pairs_trading.json")
+        self.config = load_yaml("config/pairs_trading.yaml")
         self.pair   = pair
         self.window  = self.config["window"]
         self.z_enter = self.config["z_enter"]
@@ -69,7 +70,7 @@ class PairsTradingStrategy(BaseStrategy):
         df1, df2 = data[s1], data[s2]
         df["close_1"] = df1.loc[df.index]
         df["close_2"] = df2.loc[df.index]
-        df.to_csv(f'report/{self.name}/{s1}_{s2}_signals.csv')
+        df.to_csv(f'output/{self.name}/{s1}_{s2}_signals.csv')
         return df
 
 
@@ -163,6 +164,7 @@ class PairsTradingStrategy(BaseStrategy):
         print(table)
         if plot:
             analyzer.plot(benchmark_portfolio_df['value'] if benchmark else None)
+        return all_stats
 
         
         

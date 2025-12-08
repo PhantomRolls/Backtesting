@@ -1,22 +1,20 @@
 import config
 from strategies.base import BaseStrategy
-from data.loader import DataHandler
+from utils.data_handler import DataHandler
 import datetime
 import pandas as pd
 import numpy as np
-from execution.execution import OrderExecutor
-from report.performance import PerformanceAnalyzer
-from portfolio.portfolio import Portfolio
+from core.execution import OrderExecutor
+from core.compute_performance import PerformanceAnalyzer
+from core.portfolio import Portfolio
 from tabulate import tabulate
-import sys
-import os
-import json
+from utils.config_loader import load_yaml
 
 class BuyAndHold(BaseStrategy):
     def __init__(self, preset):
         super().__init__()
         self.name = "Buy and Hold Strategy"
-        self.config = self.load_json_config('buy_and_hold.json')
+        self.config = load_yaml('config/buy_and_hold.yaml')
         self.preset = preset
         self.reallocation_window = self.config["reallocation_window"]
         self.reallocation_amount = self.config["reallocation_amount"]
@@ -82,5 +80,17 @@ class BuyAndHold(BaseStrategy):
         print(table)
         if plot:
             self.analyzer.plot(benchmark=benchmark_portfolio_df['value'])
+            from utils.excel_export import export_backtest_to_excel
+            export_backtest_to_excel(
+                filepath=f"output/{self.name}/Backtest_Report.xlsx",
+                summary_stats=stats_df,
+                equity_df=portfolio_df,
+                weights_df=None,
+                ohlc_data=self.data_handler.ohlc_dict,
+                trades_df=self.trades_to_df(),
+                frontier_df=getattr(self, "frontier_df", None)
+            )
+
+        return all_stats
             
   
