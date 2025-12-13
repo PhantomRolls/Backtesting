@@ -81,13 +81,14 @@ class BuyAndHold(BaseStrategy):
         if plot:
             self.analyzer.plot(benchmark=benchmark_portfolio_df['value'])
             from utils.excel_export import export_backtest_to_excel
+            ohlc_dict = self.data_handler.get_multiple(self.assets_dict.keys())
             export_backtest_to_excel(
                 filepath=f"output/{self.name}/Backtest_Report.xlsx",
-                summary_stats=stats_df,
+                summary_stats=all_stats,
                 equity_df=portfolio_df,
-                weights_df=None,
-                ohlc_data=self.data_handler.ohlc_dict,
-                trades_df=self.trades_to_df(),
+                weights_df=pd.DataFrame.from_dict(self.assets_dict, orient='index', columns=["Weights"]),
+                ohlc_data=ohlc_dict,
+                trades_df=None,
                 frontier_df=getattr(self, "frontier_df", None)
             )
 

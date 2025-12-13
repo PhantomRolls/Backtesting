@@ -35,7 +35,6 @@ def export_backtest_to_excel(
     - Trade log
     - Frontier Markowitz (optionnel)
     """
-
     wb = Workbook()
 
     # ============================================================
@@ -94,23 +93,23 @@ def export_backtest_to_excel(
     # ============================================================
     # 📌 ONGLET 3 : WEIGHTS
     # ============================================================
-    if weights_df != None:
-        ws = wb.create_sheet("Weights")
 
-        for r in dataframe_to_rows(weights_df, index=True, header=True):
-            ws.append(r)
+    ws = wb.create_sheet("Weights")
 
-        auto_adjust_column_width(ws)
-
-    # ============================================================
-    # 📌 ONGLET 4 : TRADES
-    # ============================================================
-    ws = wb.create_sheet("Trades")
-
-    for r in dataframe_to_rows(trades_df, index=False, header=True):
+    for r in dataframe_to_rows(weights_df, index=True, header=True):
         ws.append(r)
 
     auto_adjust_column_width(ws)
+
+    # # ============================================================
+    # # 📌 ONGLET 4 : TRADES
+    # # ============================================================
+    # ws = wb.create_sheet("Trades")
+
+    # for r in dataframe_to_rows(trades_df, index=False, header=True):
+    #     ws.append(r)
+
+    # auto_adjust_column_width(ws)
 
     # ============================================================
     # 📌 ONGLET 5 : Frontier (Markowitz)

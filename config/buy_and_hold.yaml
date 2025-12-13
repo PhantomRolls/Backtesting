@@ -28,4 +28,4 @@ portfolio_presets:
     GLD: 0.1666666667
     EEM: 0.1666666667
     BIL: 0.1666666667
-buy_and_hold_preset: custom
+buy_and_hold_preset: balanced
