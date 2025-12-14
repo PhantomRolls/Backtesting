@@ -119,22 +119,22 @@ def update_history(df: pd.DataFrame, filename):
 ###########################################
 
 if __name__ == "__main__":
-    TICKER = "AAPL"
+    tickers = ["SPY", "QQQ", "AAPL", "MSFT", "NVDA", "TSLA"]
+    for TICKER in tickers:
+        print("Downloading spot price...")
+        spot = get_spot_yahoo(TICKER)
+        print("Spot =", spot)
 
-    print("Downloading spot price...")
-    spot = get_spot_yahoo(TICKER)
-    print("Spot =", spot)
+        print("Downloading option surface from CBOE...")
+        df = get_cboe_surface(TICKER)
 
-    print("Downloading option surface from CBOE...")
-    df = get_cboe_surface(TICKER)
+        print("Cleaning data...")
+        df_clean = clean_surface(df, spot)
 
-    print("Cleaning data...")
-    df_clean = clean_surface(df, spot)
+        # ADD SPOT COLUMN (important!)
+        df_clean["spot"] = spot
 
-    # ADD SPOT COLUMN (important!)
-    df_clean["spot"] = spot
+        print("Saving daily data...")
+        df_all = update_history(df_clean, filename=f"market_data/{TICKER}.csv")
 
-    print("Saving daily data...")
-    df_all = update_history(df_clean, filename=f"market_data/{TICKER}.csv")
-
-    print("Done! Total rows in history:", len(df_all))
+        print("Done! Total rows in history:", len(df_all))
