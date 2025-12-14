@@ -2,10 +2,6 @@ name: Daily Market Data Download
 
 on:
   schedule:
-    # Heure d'été (CEST, UTC+2) → 22h30 Paris = 20h30 UTC
-    - cron: "30 20 * * *"
-
-    # Heure d'hiver (CET, UTC+1) → 22h30 Paris = 21h30 UTC
     - cron: "30 21 * * *"
 
   workflow_dispatch:
