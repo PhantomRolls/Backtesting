@@ -3,7 +3,12 @@ import pandas as pd
 from datetime import datetime
 import os
 
-FRED_API_KEY = "345db1b4f6073c599418caa080dadfea"
+
+FRED_API_KEY = os.getenv("FRED_API_KEY")
+
+if FRED_API_KEY is None:
+    raise RuntimeError("FRED_API_KEY non définie")
+
 
 
 FRED_SERIES = {

@@ -119,7 +119,7 @@ def update_history(df: pd.DataFrame, filename):
 ###########################################
 
 if __name__ == "__main__":
-    TICKER = "SPY"
+    TICKER = "AAPL"
 
     print("Downloading spot price...")
     spot = get_spot_yahoo(TICKER)

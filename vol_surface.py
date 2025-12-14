@@ -8,17 +8,25 @@ import scipy.interpolate as interpolate
 
 TICKER = "SPY"
 date = "2025-12-12"
-interpolation = False
+interpolation = True
 
-def get_data(TICKER):
-    df = pd.read_csv(f"market_data/{TICKER}.csv")
-    q = """
-    SELECT *
-    FROM df
-    WHERE date = "2025-12-12"
-    """
-    df = sqldf(q)
-    df['daysToExpiration'] = (pd.to_datetime(df['expiration'])-pd.to_datetime(df['date']))/pd.Timedelta(days=365)
+def get_data(ticker, date):
+    OPTIONS_CSV = f"market_data/{ticker}.csv"
+    df_full = pd.read_csv(OPTIONS_CSV)
+    df = df_full[df_full["date"]==date].copy()
+    df['daysToExpiration'] = (pd.to_datetime(df['expiration'])-pd.to_datetime(df['date']))/pd.Timedelta(days=1)
+    df = df[
+    (df['iv'] < 1.5) &
+    (df["volume"] > 0) &
+    (df["open_interest"] > 10) &
+    (df["daysToExpiration"] > 25) &
+    (df["daysToExpiration"] < 200)
+    ]
+    df["k"] = np.log(df["strike"] / df["spot"])
+    df = df[
+    ((df["type"] == "C") & (df["k"] >= 0)) |
+    ((df["type"] == "P") & (df["k"] <= 0))
+    ]
     return df
 
 
@@ -45,30 +53,30 @@ def max_area_complete_grid(df):
         area_remove_t = len(K) * (len(T) - 1) if badT else -1
 
         if area_remove_k >= area_remove_t:
-            # enlever le strike "le plus incompatible"
             k = max(badK, key=lambda k: len(T) - len(adjK[k] & T))
             K.remove(k)
         else:
-            # enlever la maturité "la plus incompatible"
             t = max(badT, key=lambda t: len(K) - len(adjT[t] & K))
             T.remove(t)
-
     return K, T
 
-def create_volatility_surface(calls_data, interpolation):
+def create_volatility_surface(options_data, interpolation):
+    K_active, T_active = max_area_complete_grid(options_data)
+    options_grid = options_data[options_data["strike"].isin(K_active) & options_data["daysToExpiration"].isin(T_active)]
+    spot = options_grid['spot'].iloc[-1]
+    print("nombre d'options:", len(options_grid))
+    print(len(K_active), "strikes")
+    print(np.log((options_grid["strike"].unique()/spot)).round(2))
+    print(len(T_active), "maturités")
+    print(options_grid["daysToExpiration"].unique())
     
-    K_active, T_active = max_area_complete_grid(calls_data)
-    calls_grid = calls_data[calls_data["strike"].isin(K_active) & calls_data["daysToExpiration"].isin(T_active)]
-
     surface = (
-        calls_grid[["daysToExpiration", "strike", "iv"]]
+        options_grid[["daysToExpiration", "strike", "iv"]]
         .pivot_table(
             values="iv", index="strike", columns="daysToExpiration"
         )
         .dropna()
     )
-    spot = calls_grid['spot'].iloc[-1]
-
     # Prepare interpolation data
     x = surface.columns.values
     y = np.log(surface.index.values/spot)
@@ -87,10 +95,10 @@ def create_volatility_surface(calls_data, interpolation):
         X, Y = np.meshgrid(x_new, y_new)
         Z = spline(x_new, y_new).T
 
-    return X, Y, Z
+    return X, Y, Z, options_grid
 
 
-def plot_volatility_surface(X, Y, Z):
+def plot_volatility_surface(X, Y, Z, vmin=0.2, vmax=0.6):
     plt.style.use("default")
     sns.set_style("whitegrid", {"axes.grid": False})
 
@@ -98,29 +106,26 @@ def plot_volatility_surface(X, Y, Z):
     ax = fig.add_subplot(111, projection="3d")
 
     surface = ax.plot_surface(
-        X, Y, Z, cmap="viridis", vmin=0.10, vmax=0.60, alpha=0.9, linewidth=0, antialiased=True
+        Y, X, Z, cmap="viridis", vmin=vmin, vmax=vmax, alpha=0.9, linewidth=0, antialiased=True
     )
     fig.colorbar(surface, ax=ax, shrink=0.5, aspect=10, label="IV")
-    ax.set_xlabel("Days to Expiration")
-    ax.set_ylabel("log-moneyness ln(K / S0)")
+    ax.set_ylabel("Days to Expiration")
+    ax.set_xlabel("log-moneyness ln(K / S0)")
     ax.set_zlabel("Implied Volatility")
-    ax.set_title("SPY Volatility Surface")
+    ax.set_title(f"{TICKER} Volatility Surface")
     ax.view_init(elev=20, azim=45)
+    ax.invert_yaxis()
 
     plt.tight_layout()
     plt.show()
 
 
 def volsurface(TICKER, date, interpolation):  
-    # Load and process calls data
-    OPTIONS_CSV = f"market_data/{TICKER}.csv"
-    df = pd.read_csv(OPTIONS_CSV)
-    calls = df[(df["date"]==date) & (df["type"]=="C")]
-    calls['daysToExpiration'] = (pd.to_datetime(calls['expiration'])-pd.to_datetime(calls['date']))/pd.Timedelta(days=1)
-
-    # Create and plot surface
-    X_new, Y_new, Z_smooth = create_volatility_surface(calls, interpolation)
-    plot_volatility_surface(X_new, Y_new, Z_smooth)
+    options = get_data(TICKER, date)
+    X, Y, Z, options_grid = create_volatility_surface(options, interpolation)
+    vmin = options_grid['iv'].quantile(0.05)
+    vmax = options_grid['iv'].quantile(0.95)
+    plot_volatility_surface(X, Y, Z, vmin, vmax)
     
 
 volsurface(TICKER, date, interpolation=interpolation)
