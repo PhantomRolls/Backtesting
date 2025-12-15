@@ -125,14 +125,25 @@ def volsurface(TICKER, date, interpolation):
     vmax = options_grid['iv'].quantile(0.95)
     plot_volatility_surface(X, Y, Z, vmin, vmax)
 
-def skew(TICKER, date, daysToExpiration):
+def skew(TICKER, date, daysToExpiration, visual="log-moneyness"):
     options = get_data(TICKER, date)
     daysToExpiration = options[options["daysToExpiration"]>=daysToExpiration].iloc[0] ["daysToExpiration"]
     options = options[options["daysToExpiration"]==daysToExpiration]
     log_moneynes = np.log(options["strike"]/options["spot"])
-    plt.plot(options["delta"], options["iv"], marker='+')
+    options["call_delta"] = np.where(
+        options["type"] == "P",
+        options["delta"] + 1,
+        options["delta"]
+    )
+    if visual == "log-moneyness":
+        x_axis = log_moneynes
+        x_label = "Log-moneyness"
+    elif visual == "delta":
+        x_axis = options["call_delta"] * 100
+        x_label = "Delta"
+    plt.plot(x_axis, options["iv"], marker='+')
     plt.title(f"{TICKER} skew | Days to Expiration = {daysToExpiration}")
-    plt.xlabel("Log-moneyness")
+    plt.xlabel(x_label)
     plt.ylabel("IV")
     plt.ylim(bottom=0, top=1)
     plt.show()
@@ -142,4 +153,4 @@ if __name__ == "__main__":
     date = "2025-12-12"
     interpolation = True
     # volsurface(TICKER, date, interpolation=interpolation)
-    skew(TICKER, date, 100)
+    skew(TICKER, date, 100, visual="delta")

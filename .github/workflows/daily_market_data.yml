@@ -31,4 +31,13 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python market_data/risk_free_rate_download.py
+      
+      - name: Commit updated market data
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add market_data/*.csv
+          git commit -m "Daily market data update" || echo "No changes"
+          git push
+
 
