@@ -153,4 +153,4 @@ if __name__ == "__main__":
     date = "2025-12-12"
     interpolation = True
     # volsurface(TICKER, date, interpolation=interpolation)
-    skew(TICKER, date, 100, visual="delta")
+    skew(TICKER, date, 100, visual="log-moneyness")
