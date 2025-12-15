@@ -28,4 +28,7 @@ jobs:
         run: python market_data/option_download.py
 
       - name: Run risk-free rate download
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: python market_data/risk_free_rate_download.py
+
