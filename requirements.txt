@@ -1,6 +1,5 @@
 requests
-import math
-import datetime
-import time
-import json
-import yfinance
+pandas
+numpy
+yfinance
+datetime
