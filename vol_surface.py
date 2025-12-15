@@ -6,9 +6,7 @@ from collections import defaultdict
 import seaborn as sns
 import scipy.interpolate as interpolate
 
-TICKER = "SPY"
-date = "2025-12-12"
-interpolation = True
+
 
 def get_data(ticker, date):
     OPTIONS_CSV = f"market_data/{ticker}.csv"
@@ -126,6 +124,22 @@ def volsurface(TICKER, date, interpolation):
     vmin = options_grid['iv'].quantile(0.05)
     vmax = options_grid['iv'].quantile(0.95)
     plot_volatility_surface(X, Y, Z, vmin, vmax)
-    
 
-volsurface(TICKER, date, interpolation=interpolation)
+def skew(TICKER, date, daysToExpiration):
+    options = get_data(TICKER, date)
+    daysToExpiration = options[options["daysToExpiration"]>=daysToExpiration].iloc[0] ["daysToExpiration"]
+    options = options[options["daysToExpiration"]==daysToExpiration]
+    log_moneynes = np.log(options["strike"]/options["spot"])
+    plt.plot(options["delta"], options["iv"], marker='+')
+    plt.title(f"{TICKER} skew | Days to Expiration = {daysToExpiration}")
+    plt.xlabel("Log-moneyness")
+    plt.ylabel("IV")
+    plt.ylim(bottom=0, top=1)
+    plt.show()
+    
+if __name__ == "__main__":
+    TICKER = "NVDA"
+    date = "2025-12-12"
+    interpolation = True
+    # volsurface(TICKER, date, interpolation=interpolation)
+    skew(TICKER, date, 100)
