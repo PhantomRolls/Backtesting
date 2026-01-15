@@ -1,6 +1,7 @@
 import numpy as np
-from utils.options_utils import get_riskfree_rate
+from utils import get_riskfree_rate
 from dataclasses import dataclass
+from option_pricing import compute_iv
 
 
 @dataclass
@@ -53,7 +54,6 @@ class HestonCalibration:
         idx = (pairs["daysToExpiration"] - tau*365).abs().idxmin()
         daysToExpiration = pairs.iloc[idx]["daysToExpiration"]
         calls_puts = pairs[pairs["daysToExpiration"]== daysToExpiration]
-        print("forward τ", calls_puts["daysToExpiration"].iloc[0])
         r = get_riskfree_rate(self.config.date, tau)
         S = calls_puts["spot_call"].iloc[0]
         K = calls_puts["strike"]
@@ -61,6 +61,7 @@ class HestonCalibration:
         P = calls_puts["price_put"]
         F = (np.exp(r*tau) * (C - P) + K).mean()
         q = r - 1/tau * np.log(F/S)
+        self.spot = S
         return F, S, q, r
 
 
@@ -116,7 +117,26 @@ class HestonCalibration:
         C = 1/2 * (S*np.exp(-q*tau) - K*np.exp(-r*tau)) + np.exp(-r*tau)/np.pi * (S * I1 - K * I2)
         P = C - S*np.exp(-q*tau) + K*np.exp(-r*tau)
         return C, P
-        
+    
+    def compute_iv_surface(self, theta0, thetaf, Ks, taus):
+        Ks = np.array(Ks)
+        taus = np.array(taus)
+        data0 = []
+        dataf = []
+        for tau in taus:
+            params = self.cache[tau]
+            daysToExpiration = int(tau*365)
+            for K in Ks:
+                C0, P0 = self.call_price_heston(theta0, K, tau)
+                Cf, Pf = self.call_price_heston(thetaf, K, tau)
+                iv0 = compute_iv(C0, params.S, K, tau, params.r, right="C")
+                ivf = compute_iv(Cf, params.S, K, tau, params.r, right="C")
+                data0.append([tau, K, iv0, daysToExpiration, params.S])
+                dataf.append([tau, K, ivf, daysToExpiration, params.S])
+        import pandas as pd
+        init_df = pd.DataFrame(data0, columns=["tau", "strike", "iv", "daysToExpiration", "spot"])
+        calib_df = pd.DataFrame(dataf, columns=["tau", "strike", "iv", "daysToExpiration", "spot"])
+        return init_df, calib_df
         
     def residuals(self, theta):
         res = []
@@ -139,60 +159,6 @@ class HestonCalibration:
                 res.append(residu) 
         return np.array(res)
 
-    def test_grad_phi(self, theta, tau):
-        from copy import deepcopy
-        eps = 1e-6
-        u0 = 1.3  # IMPORTANT : pas trop petit
-
-        phi0 = self.phi(theta, u0, tau)        # complexe
-        grad = self.grad_phi(theta, u0, tau)   # complexe (5,)
-
-        names = ["v0", "v_bar", "rho", "kappa", "sigma"]
-
-        print("Testing grad_phi at u =", u0, "tau =", tau)
-        for j, name in enumerate(names):
-            th2 = deepcopy(theta)
-            setattr(th2, name, getattr(theta, name) + eps)
-
-            phi1 = self.phi(th2, u0, tau)
-            fd = (phi1 - phi0) / eps
-
-            ratio = fd / (grad[j] + 1e-30)
-
-            print(
-                f"{name:6s} | "
-                f"|FD|={abs(fd):.3e} | "
-                f"|GA|={abs(grad[j]):.3e} | "
-                f"|ratio|={abs(ratio):.6f}"
-            )
-            
-    def test_grad_call(self, theta, K, tau, eps=1e-5):
-        print(f"\nTesting grad_call at K={K}, tau={tau}")
-
-        # gradient analytique
-        grad_ana = self.gradient_call_heston(theta, K, tau)
-
-        names = ["v0", "v_bar", "rho", "kappa", "sigma"]
-        theta_vec = self._theta_to_vec(theta)
-
-        for i, name in enumerate(names):
-            d = np.zeros_like(theta_vec)
-            d[i] = eps
-
-            theta_p = self._vec_to_theta(theta_vec + d)
-            theta_m = self._vec_to_theta(theta_vec - d)
-
-            C_p, P_p = self.call_price_heston(theta_p, K, tau)
-            C_m, P_m = self.call_price_heston(theta_m, K, tau)
-
-            grad_fd = (C_p - C_m) / (2 * eps)
-
-            ga = grad_ana[i]
-            ratio = grad_fd / ga if abs(ga) > 1e-12 else np.nan
-
-            print(
-                f"{name:6s} | FD={grad_fd:+.6e} | GA={ga:+.6e} | ratio={ratio:.6f}"
-            )
 
     def h(self, theta, u, tau):
         i=1j

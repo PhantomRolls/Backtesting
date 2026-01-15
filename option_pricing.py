@@ -67,17 +67,3 @@ def compute_iv(price_market, S, K, tau, r, right,
 
 
 
-def filter_df(df):
-    df = df[
-        (
-            ((df["type"] == "C") & (df["k"] >= 0)) |
-            ((df["type"] == "P") & (df["k"] <= 0))
-        ) &
-        (df["daysToExpiration"] > 25) &
-        (df["daysToExpiration"] < 200)
-    ]
-    df = df[
-            ((df["type"] == "C") & (df["k"] >= 0)) |
-            ((df["type"] == "P") & (df["k"] <= 0))
-            ]
-    return df
