@@ -1,65 +1,32 @@
-# Quant Trading & Backtesting Platform
+# Heston Model Calibration
 
-A modular Python trading and backtesting platform with a graphical interface
-to analyze systematic strategies across multiple asset classes.
+This project implements the calibration of the Heston stochastic volatility
+model on option market data.
 
-## Overview
+It is based on a paper from the London School of Economics (Full and fast calibration of the Heston
+stochastic volatility model - 2017)
 
-This project provides an end-to-end framework for:
-- strategy definition
-- portfolio construction and optimization
-- historical backtesting with transaction costs
-- performance and risk analysis
+The model parameters are estimated by fitting the implied volatility surface
+using analytical option pricing and numerical optimization.
 
-The platform is designed to replicate the workflow of systematic
-trading and quantitative asset management.
+## Calibration result
 
-## User Interface
+The figure below illustrates the calibration process for SPY options data:
+- initial random volatility surface
+- calibrated surface obtained after optimization
+- target (reference) volatility surface
 
-The application offers a graphical interface to configure backtests,
-select assets and strategies, and visualize results.
+![Heston volatility surface calibration](images/SPY_surface_calibration.png)
 
-### Global backtesting parameters
-![Global parameters](images/parameters.png)
+## Model and methodology
 
-### Pairs trading strategy
-![Pairs trading](images/iv_crush.png)
-
-### Portfolio optimization (Markowitz)
-![Markowitz optimization](images/markowitz.png)
-
-### Interactive performance visualization
-![Portfolio performance](images/pairs_trading.png)
-
-## Implemented strategies
-
-- **Buy & Hold**
-- **Pairs Trading** (mean reversion, hedge ratio estimation, half-life)
-- **Markowitz portfolio optimization**
-- **Volatility-based strategies** (IV analysis)
-
-## Backtesting and risk metrics
-
-- Annualized return and volatility
-- Sharpe ratio
-- Maximum drawdown
-- Transaction costs and slippage
-- Portfolio diversification metrics
-- Benchmark comparison
-
-## Architecture
-
-The platform is built with a clear separation between:
-- strategy logic
-- backtesting engine
-- portfolio and risk metrics
-- user interface
-
-Strategies are fully decoupled from the backtesting engine, allowing
-easy extension and experimentation.
+- Heston stochastic volatility model
+- Semi-closed form option pricing
+- Calibration via least-squares / maximum likelihood
+- Exact gradient computation
+- Levenberg–Marquardt optimization
 
 ## How to run
 
 ```bash
-pip install -r requirements.txt
 python main.py
